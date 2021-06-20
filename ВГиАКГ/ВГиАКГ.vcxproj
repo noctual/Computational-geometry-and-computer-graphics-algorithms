@@ -148,6 +148,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\glfw.3.3.4\build\native\glfw.targets" Condition="Exists('..\packages\glfw.3.3.4\build\native\glfw.targets')" />
+    <Import Project="..\packages\glm.0.9.9.800\build\native\glm.targets" Condition="Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -155,5 +156,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props'))" />
     <Error Condition="!Exists('..\packages\glfw.3.3.4\build\native\glfw.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glfw.3.3.4\build\native\glfw.targets'))" />
+    <Error Condition="!Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.9.800\build\native\glm.targets'))" />
   </Target>
 </Project>

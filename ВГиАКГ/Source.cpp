@@ -1,6 +1,10 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#define N 100
 
 using namespace std;
 
@@ -84,17 +88,21 @@ bool createShaderProgram()
     const GLchar vsh[] =
         "#version 330\n"
         ""
-        "layout(location = 0) in vec3 a_position;"
-        "layout(location = 1) in vec3 a_color;"
+        "layout(location = 0) in vec2 a_position;"
         ""
         "uniform mat4 u_mvp;"
         ""
         "out vec3 v_color;"
         ""
+        "vec3 grad(vec2 pos){"
+        "   return vec3(-2*sin(pos[1])*(1-pos[0]*pos[1]),1,-2*sin(pos[0])*(1-pos[0]*pos[1]));"
+        "}"
+        ""
         "void main()"
         "{"
-        "    v_color = a_color;"
-        "    gl_Position = u_mvp * vec4(a_position, 1.0);"
+        "   vec4 pos = vec4(a_position[0], (1 - a_position[0] * a_position[1]) * sin(1 - a_position[0] * a_position[1]), a_position[1], 1.0);"
+        "   gl_Position = u_mvp * pos;"
+        "   v_color = abs(normalize(grad(a_position)));"
         "}"
         ;
 
@@ -128,66 +136,47 @@ bool createShaderProgram()
 
 bool createModel()
 {
-    const GLfloat vertices[] =
-    {
-        -1.0, -1.0, 1.0, 1.0, 0.0, 0.0,
-        1.0, -1.0, 1.0, 1.0, 0.0, 0.0,
-        1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-        -1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+    const unsigned int cnt_vertices = N * N * 2;
+    const unsigned int cnt_indices = (N - 1) * (N - 1) * 6;
 
-        1.0, -1.0, 1.0, 1.0, 1.0, 0.0,
-        1.0, -1.0, -1.0, 1.0, 1.0, 0.0,
-        1.0, 1.0, -1.0, 1.0, 1.0, 0.0,
-        1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+    GLfloat* vertices = new GLfloat[cnt_vertices];
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            vertices[i * N * 2 + j * 2] = (i - N / 2) / 15.0;
+            vertices[i * N * 2 + j * 2 + 1] = (j - N / 2) / 15.0;
+        }
+    }
 
-        1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-        1.0, 1.0, -1.0, 1.0, 0.0, 1.0,
-        -1.0, 1.0, -1.0, 1.0, 0.0, 1.0,
-        -1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-
-        -1.0, 1.0, 1.0, 0.0, 1.0, 1.0,
-        -1.0, 1.0, -1.0, 0.0, 1.0, 1.0,
-        -1.0, -1.0, -1.0, 0.0, 1.0, 1.0,
-        -1.0, -1.0, 1.0, 0.0, 1.0, 1.0,
-
-        -1.0, -1.0, 1.0, 0.0, 1.0, 0.0,
-        -1.0, -1.0, -1.0, 0.0, 1.0, 0.0,
-        1.0, -1.0, -1.0, 0.0, 1.0, 0.0,
-        1.0, -1.0, 1.0, 0.0, 1.0, 0.0,
-
-        -1.0, -1.0, -1.0, 0.0, 0.0, 1.0,
-        -1.0, 1.0, -1.0, 0.0, 0.0, 1.0,
-        1.0, 1.0, -1.0, 0.0, 0.0, 1.0,
-        1.0, -1.0, -1.0, 0.0, 0.0, 1.0,
-    };
-
-    const GLuint indices[] =
-    {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        8, 9, 10, 10, 11, 8,
-        12, 13, 14, 14, 15, 12,
-        16, 17, 18, 18, 19, 16,
-        20, 21, 22, 22, 23, 20
-    };
+    GLuint* indices = new GLuint[cnt_indices];
+    for (int i = 0; i < N - 1; i++) {
+        for (int j = 0; j < N - 1; j++) {
+            indices[i * (N - 1) * 6 + j * 6] = i * N + j;
+            indices[i * (N - 1) * 6 + j * 6 + 1] = i * N + j + 1;
+            indices[i * (N - 1) * 6 + j * 6 + 2] = i * N + j + 1 + N;
+            indices[i * (N - 1) * 6 + j * 6 + 3] = i * N + j + 1 + N;
+            indices[i * (N - 1) * 6 + j * 6 + 4] = i * N + j + N;
+            indices[i * (N - 1) * 6 + j * 6 + 5] = i * N + j;
+        }
+    }
 
     glGenVertexArrays(1, &g_model.vao);
     glBindVertexArray(g_model.vao);
 
     glGenBuffers(1, &g_model.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, g_model.vbo);
-    glBufferData(GL_ARRAY_BUFFER, 24 * 6 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, cnt_vertices * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &g_model.ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_model.ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * 6 * sizeof(GLuint), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt_indices * sizeof(GLuint), indices, GL_STATIC_DRAW);
 
-    g_model.indexCount = 6 * 6;
+    g_model.indexCount = cnt_indices;
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (const GLvoid*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (const GLvoid*)0);
+
+    delete[] vertices;
+    delete[] indices;
 
     return g_model.vbo != 0 && g_model.ibo != 0 && g_model.vao != 0;
 }
@@ -215,15 +204,18 @@ void draw()
     glUseProgram(g_shaderProgram);
     glBindVertexArray(g_model.vao);
 
-    const GLfloat mvp[] =
-    {
-        1.708748f, -1.478188f, -0.360884f, -0.353738f,
-        0.000000f, 1.208897f, -0.883250f, -0.865760f,
-        -1.707388f, -1.479366f, -0.361171f, -0.354019f,
-        0.000000f, 0.000000f, 4.898990f, 5.000000f
-    };
+    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
 
-    glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, mvp);
+    glm::mat4 View = glm::lookAt(
+        glm::vec3(12, 12, 12),
+        glm::vec3(0, 0, 0),
+        glm::vec3(0, 1, 0)
+    );
+
+    glm::mat4 Model = glm::mat4(1.0f);
+    Model = glm::rotate(Model, glm::radians(-15.0f), glm::vec3(1, 1, 0));
+
+    glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
     glDrawElements(GL_TRIANGLES, g_model.indexCount, GL_UNSIGNED_INT, NULL);
 }
