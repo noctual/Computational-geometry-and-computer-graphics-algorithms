@@ -12,6 +12,11 @@ GLFWwindow* g_window;
 
 GLuint g_shaderProgram;
 GLint g_uMVP;
+// Last cursor position.
+GLfloat lastX = 0;
+GLfloat lastY = 0;
+// Rotation matrix.
+glm::mat4 new_rot = glm::mat4(1.0f);
 
 class Model
 {
@@ -196,6 +201,19 @@ void reshape(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
+void mousePosWrapper(GLFWwindow* window, double xpos, double ypos)
+{
+    GLfloat xoffset = lastX - xpos;
+    GLfloat yoffset = ypos - lastY;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        new_rot = glm::rotate(new_rot, glm::radians(1.0f), glm::normalize(glm::vec3(yoffset, xoffset, 0)));
+    }
+}
+
 void draw()
 {
     // Clear color buffer.
@@ -214,6 +232,7 @@ void draw()
 
     glm::mat4 Model = glm::mat4(1.0f);
     Model = glm::rotate(Model, glm::radians(-15.0f), glm::vec3(1, 1, 0));
+    Model = new_rot * Model;
 
     glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
@@ -274,6 +293,9 @@ bool initOpenGL()
 
     // Set callback for framebuffer resizing event.
     glfwSetFramebufferSizeCallback(g_window, reshape);
+
+    // Set callback for changes cursor position.
+    glfwSetCursorPosCallback(g_window, mousePosWrapper);
 
     return true;
 }
