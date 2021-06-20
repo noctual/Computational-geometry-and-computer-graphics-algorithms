@@ -11,6 +11,7 @@ using namespace std;
 GLFWwindow* g_window;
 
 GLuint g_shaderProgram;
+GLint g_uMV;
 GLint g_uMVP;
 // Last cursor position.
 GLfloat lastX = 0;
@@ -99,8 +100,10 @@ bool createShaderProgram()
         "layout(location = 0) in vec2 a_position;"
         ""
         "uniform mat4 u_mvp;"
+        "uniform mat4 u_mv;"
         ""
-        "out vec3 v_color;"
+        "out vec3 v_normal;"
+        "out vec3 v_pos;"
         ""
         "vec3 grad(vec2 pos){"
         "   return vec3(-2*sin(pos[1])*(1-pos[0]*pos[1]),1,-2*sin(pos[0])*(1-pos[0]*pos[1]));"
@@ -110,20 +113,30 @@ bool createShaderProgram()
         "{"
         "   vec4 pos = vec4(a_position[0], (1 - a_position[0] * a_position[1]) * sin(1 - a_position[0] * a_position[1]), a_position[1], 1.0);"
         "   gl_Position = u_mvp * pos;"
-        "   v_color = abs(normalize(grad(a_position)));"
+        "   vec3 n = grad(a_position);"
+        "   v_pos = (u_mv * pos).xyz;"
+        "   v_normal = normalize(transpose(inverse(mat3(u_mv))) * n);"
         "}"
         ;
 
     const GLchar fsh[] =
         "#version 330\n"
         ""
-        "in vec3 v_color;"
+        "in vec3 v_normal;"
+        "in vec3 v_pos;"
         ""
         "layout(location = 0) out vec4 o_color;"
         ""
         "void main()"
         "{"
-        "   o_color = vec4(v_color, 1.0);"
+        "   const vec3 color = vec3(0.0, 1.0, 0.0);"
+        "   vec3 n = normalize(v_normal);"
+        "   vec3 l = normalize(vec3(12.0, 12.0, 0.0) - v_pos);"
+        "   vec3 e = normalize(-v_pos);"
+        "   float d = max(dot(l, n), 0.1);"
+        "   vec3 h = normalize(l + e);"
+        "   float s = pow(max(dot(h, n), 0.0), 20);"
+        "   o_color = vec4(color * d + vec3(s), 1.0);"
         "}"
         ;
 
@@ -134,6 +147,7 @@ bool createShaderProgram()
 
     g_shaderProgram = createProgram(vertexShader, fragmentShader);
 
+    g_uMV = glGetUniformLocation(g_shaderProgram, "u_mv");
     g_uMVP = glGetUniformLocation(g_shaderProgram, "u_mvp");
 
     glDeleteShader(vertexShader);
@@ -239,6 +253,7 @@ void draw()
     Model = glm::rotate(Model, glm::radians(-15.0f), glm::vec3(1, 1, 0));
     Model = new_rot * Model;
 
+    glUniformMatrix4fv(g_uMV, 1, GL_FALSE, glm::value_ptr(View * Model));
     glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
     glDrawElements(GL_TRIANGLES, g_model.indexCount, GL_UNSIGNED_INT, NULL);
