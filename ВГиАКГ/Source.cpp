@@ -141,7 +141,7 @@ bool createShaderProgram()
         ""
         "void main()"
         "{"
-        "   vec4 color = mix(texture(u_map_grass, v_texCoord), texture(u_map_paper, v_texCoord), 0.6);"
+        "   vec4 color = mix(texture(u_map_grass, v_texCoord), texture(u_map_paper, v_texCoord), abs(v_texCoord[0]) + abs(v_texCoord[1]) < 0.25 ? 0.6 : 1);"
         "   vec3 n = normalize(v_normal);"
         "   vec3 l = normalize(vec3(12.0, 12.0, 0.0) - v_pos);"
         "   vec3 e = normalize(-v_pos);"
