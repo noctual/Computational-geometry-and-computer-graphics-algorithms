@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "stb_image.h"
 
 #define N 100
 
