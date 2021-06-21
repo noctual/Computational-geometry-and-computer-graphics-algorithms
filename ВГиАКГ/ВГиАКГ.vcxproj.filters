@@ -30,4 +30,12 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="paper.jpg">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="grass.jpg">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

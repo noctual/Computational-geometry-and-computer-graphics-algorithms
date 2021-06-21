@@ -14,6 +14,11 @@ GLFWwindow* g_window;
 GLuint g_shaderProgram;
 GLint g_uMV;
 GLint g_uMVP;
+// Textures
+GLint mapLocationGrass;
+GLuint texGrassID;
+GLint mapLocationPaper;
+GLuint texPaperID;
 // Last cursor position.
 GLfloat lastX = 0;
 GLfloat lastY = 0;
@@ -105,6 +110,7 @@ bool createShaderProgram()
         ""
         "out vec3 v_normal;"
         "out vec3 v_pos;"
+        "out vec2 v_texCoord;"
         ""
         "vec3 grad(vec2 pos){"
         "   return vec3(-2*sin(pos[1])*(1-pos[0]*pos[1]),1,-2*sin(pos[0])*(1-pos[0]*pos[1]));"
@@ -113,6 +119,7 @@ bool createShaderProgram()
         "void main()"
         "{"
         "   vec4 pos = vec4(a_position[0], (1 - a_position[0] * a_position[1]) * sin(1 - a_position[0] * a_position[1]), a_position[1], 1.0);"
+        "   v_texCoord = a_position / 15;"
         "   gl_Position = u_mvp * pos;"
         "   vec3 n = grad(a_position);"
         "   v_pos = (u_mv * pos).xyz;"
@@ -125,19 +132,23 @@ bool createShaderProgram()
         ""
         "in vec3 v_normal;"
         "in vec3 v_pos;"
+        "in vec2 v_texCoord;"
+        ""
+        "uniform sampler2D u_map_grass;"
+        "uniform sampler2D u_map_paper;"
         ""
         "layout(location = 0) out vec4 o_color;"
         ""
         "void main()"
         "{"
-        "   const vec3 color = vec3(0.0, 1.0, 0.0);"
+        "   vec4 color = mix(texture(u_map_grass, v_texCoord), texture(u_map_paper, v_texCoord), 0.6);"
         "   vec3 n = normalize(v_normal);"
         "   vec3 l = normalize(vec3(12.0, 12.0, 0.0) - v_pos);"
         "   vec3 e = normalize(-v_pos);"
         "   float d = max(dot(l, n), 0.1);"
         "   vec3 h = normalize(l + e);"
         "   float s = pow(max(dot(h, n), 0.0), 20);"
-        "   o_color = vec4(color * d + vec3(s), 1.0);"
+        "   o_color = color * d + vec4(s);"
         "}"
         ;
 
@@ -153,6 +164,31 @@ bool createShaderProgram()
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+
+    GLsizei texW, texH, nrChannels;
+    GLvoid* image;
+    
+    image = stbi_load("grass.jpg", &texW, &texH, &nrChannels, 0);
+    glGenTextures(1, &texGrassID);
+    glBindTexture(GL_TEXTURE_2D, texGrassID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    delete[] image;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    mapLocationGrass = glGetUniformLocation(g_shaderProgram, "u_map_grass");
+
+    image = stbi_load("paper.jpg", &texW, &texH, &nrChannels, 0);
+    glGenTextures(2, &texPaperID);
+    glBindTexture(GL_TEXTURE_2D, texPaperID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    delete[] image;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    mapLocationPaper = glGetUniformLocation(g_shaderProgram, "u_map_paper");
 
     return g_shaderProgram != 0;
 }
@@ -257,6 +293,14 @@ void draw()
     glUniformMatrix4fv(g_uMV, 1, GL_FALSE, glm::value_ptr(View * Model));
     glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, texGrassID);
+    glUniform1i(mapLocationGrass, 0);
+    
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, texPaperID);
+    glUniform1i(mapLocationGrass, 1);
+
     glDrawElements(GL_TRIANGLES, g_model.indexCount, GL_UNSIGNED_INT, NULL);
 }
 
@@ -270,6 +314,8 @@ void cleanup()
         glDeleteBuffers(1, &g_model.ibo);
     if (g_model.vao != 0)
         glDeleteVertexArrays(1, &g_model.vao);
+    glDeleteTextures(1, &texGrassID);
+    glDeleteTextures(1, &texPaperID);
 }
 
 bool initOpenGL()
