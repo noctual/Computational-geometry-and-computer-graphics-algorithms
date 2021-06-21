@@ -17,6 +17,9 @@ GLfloat lastX = 0;
 GLfloat lastY = 0;
 // Rotation matrix.
 glm::mat4 new_rot = glm::mat4(1.0f);
+// Window size
+int g_width = 800;
+int g_height = 600;
 
 class Model
 {
@@ -199,18 +202,20 @@ bool init()
 void reshape(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    g_width = width, g_height = height;
 }
 
 void mousePosWrapper(GLFWwindow* window, double xpos, double ypos)
 {
-    GLfloat xoffset = lastX - xpos;
+    GLfloat xoffset = xpos - lastX;
     GLfloat yoffset = ypos - lastY;
 
     lastX = xpos;
     lastY = ypos;
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        new_rot = glm::rotate(new_rot, glm::radians(1.0f), glm::normalize(glm::vec3(yoffset, xoffset, 0)));
+        new_rot = glm::rotate(new_rot, glm::radians(xoffset / g_width * 90.0f), glm::vec3(0, 1, 0));
+        new_rot = glm::rotate(new_rot, glm::radians(yoffset / g_height * 90.0f), glm::vec3(1, 0, 0));
     }
 }
 
@@ -267,7 +272,7 @@ bool initOpenGL()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create window.
-    g_window = glfwCreateWindow(800, 600, "OpenGL Test", NULL, NULL);
+    g_window = glfwCreateWindow(g_width, g_height, "OpenGL Test", NULL, NULL);
     if (g_window == NULL)
     {
         cout << "Failed to open GLFW window" << endl;
