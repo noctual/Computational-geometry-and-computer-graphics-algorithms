@@ -1,4 +1,7 @@
 #include <iostream>
+#include <deque>
+#include <vector>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/vec3.hpp>
@@ -15,10 +18,6 @@ GLuint g_shaderProgram;
 GLint g_uMV;
 GLint g_uMVP;
 // Textures
-GLint mapLocationGrass;
-GLuint texGrassID;
-GLint mapLocationPaper;
-GLuint texPaperID;
 // Last cursor position.
 GLfloat lastX = 0;
 GLfloat lastY = 0;
@@ -27,6 +26,9 @@ glm::mat4 new_rot = glm::mat4(1.0f);
 // Window size
 int g_width = 800;
 int g_height = 600;
+// Vertices
+const unsigned int cnt_vertices = N * N * 3;
+GLfloat* vertices;
 
 class Model
 {
@@ -103,52 +105,28 @@ bool createShaderProgram()
     const GLchar vsh[] =
         "#version 330\n"
         ""
-        "layout(location = 0) in vec2 a_position;"
+        "layout(location = 0) in vec3 a_position;"
         ""
         "uniform mat4 u_mvp;"
         "uniform mat4 u_mv;"
         ""
-        "out vec3 v_normal;"
-        "out vec3 v_pos;"
-        "out vec2 v_texCoord;"
-        ""
-        "vec3 grad(vec2 pos){"
-        "   return vec3(-2*sin(pos[1])*(1-pos[0]*pos[1]),1,-2*sin(pos[0])*(1-pos[0]*pos[1]));"
-        "}"
         ""
         "void main()"
         "{"
-        "   vec4 pos = vec4(a_position[0], (1 - a_position[0] * a_position[1]) * sin(1 - a_position[0] * a_position[1]), a_position[1], 1.0);"
-        "   v_texCoord = a_position / 15;"
+        "   vec4 pos = vec4(a_position, 1.0);"
         "   gl_Position = u_mvp * pos;"
-        "   vec3 n = grad(a_position);"
-        "   v_pos = (u_mv * pos).xyz;"
-        "   v_normal = normalize(transpose(inverse(mat3(u_mv))) * n);"
         "}"
         ;
 
     const GLchar fsh[] =
         "#version 330\n"
         ""
-        "in vec3 v_normal;"
-        "in vec3 v_pos;"
-        "in vec2 v_texCoord;"
-        ""
-        "uniform sampler2D u_map_grass;"
-        "uniform sampler2D u_map_paper;"
         ""
         "layout(location = 0) out vec4 o_color;"
         ""
         "void main()"
         "{"
-        "   vec4 color = mix(texture(u_map_grass, v_texCoord), texture(u_map_paper, v_texCoord), 0.2 / (abs(v_texCoord[0]) + abs(v_texCoord[1])));"
-        "   vec3 n = normalize(v_normal);"
-        "   vec3 l = normalize(vec3(12.0, 12.0, 0.0) - v_pos);"
-        "   vec3 e = normalize(-v_pos);"
-        "   float d = max(dot(l, n), 0.1);"
-        "   vec3 h = normalize(l + e);"
-        "   float s = pow(max(dot(h, n), 0.0), 20);"
-        "   o_color = color * d + vec4(s);"
+        "   o_color = vec4(0.0, 1.0, 0.0, 0.0);"
         "}"
         ;
 
@@ -165,47 +143,22 @@ bool createShaderProgram()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    GLsizei texW, texH, nrChannels;
-    GLvoid* image;
-    
-    image = stbi_load("grass.jpg", &texW, &texH, &nrChannels, 0);
-    glGenTextures(1, &texGrassID);
-    glBindTexture(GL_TEXTURE_2D, texGrassID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-    delete[] image;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    mapLocationGrass = glGetUniformLocation(g_shaderProgram, "u_map_grass");
-
-    image = stbi_load("paper.jpg", &texW, &texH, &nrChannels, 0);
-    glGenTextures(2, &texPaperID);
-    glBindTexture(GL_TEXTURE_2D, texPaperID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texW, texH, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-    delete[] image;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    mapLocationPaper = glGetUniformLocation(g_shaderProgram, "u_map_paper");
 
     return g_shaderProgram != 0;
 }
 
 bool createModel()
 {
-    const unsigned int cnt_vertices = N * N * 2;
-    const unsigned int cnt_indices = (N - 1) * (N - 1) * 6;
-
-    GLfloat* vertices = new GLfloat[cnt_vertices];
+    vertices = new GLfloat[cnt_vertices];
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            vertices[i * N * 2 + j * 2] = (i - N / 2) / 15.0;
-            vertices[i * N * 2 + j * 2 + 1] = (j - N / 2) / 15.0;
+            vertices[i * N * 3 + j * 3] = (i - N / 2) / 15.0;
+            vertices[i * N * 3 + j * 3 + 1] = 0.0;
+            vertices[i * N * 3 + j * 3 + 2] = (j - N / 2) / 15.0;
         }
     }
 
+    const unsigned int cnt_indices = (N - 1) * (N - 1) * 6;
     GLuint* indices = new GLuint[cnt_indices];
     for (int i = 0; i < N - 1; i++) {
         for (int j = 0; j < N - 1; j++) {
@@ -232,9 +185,8 @@ bool createModel()
     g_model.indexCount = cnt_indices;
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (const GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (const GLvoid*)0);
 
-    delete[] vertices;
     delete[] indices;
 
     return g_model.vbo != 0 && g_model.ibo != 0 && g_model.vao != 0;
@@ -293,13 +245,6 @@ void draw()
     glUniformMatrix4fv(g_uMV, 1, GL_FALSE, glm::value_ptr(View * Model));
     glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
-    glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, texGrassID);
-    glUniform1i(mapLocationGrass, 0);
-    
-    glActiveTexture(GL_TEXTURE0 + 1);
-    glBindTexture(GL_TEXTURE_2D, texPaperID);
-    glUniform1i(mapLocationGrass, 1);
 
     glDrawElements(GL_TRIANGLES, g_model.indexCount, GL_UNSIGNED_INT, NULL);
 }
@@ -314,8 +259,7 @@ void cleanup()
         glDeleteBuffers(1, &g_model.ibo);
     if (g_model.vao != 0)
         glDeleteVertexArrays(1, &g_model.vao);
-    glDeleteTextures(1, &texGrassID);
-    glDeleteTextures(1, &texPaperID);
+    delete[] vertices;
 }
 
 bool initOpenGL()
@@ -373,6 +317,26 @@ void tearDownOpenGL()
     glfwTerminate();
 }
 
+void update(deque<vector<float>>& deq) {
+    
+    vector<float> random;
+    for (int i = 0; i < N; i++)
+        random.push_back(rand()%10);
+    deq.push_back(random);
+    while (deq.size() > N) {
+        deq.pop_front();
+    }
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            vertices[i * N * 3 + j * 3 + 1] = (deq.size() > i ? deq[i][j] : 0.0);
+        }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, g_model.vbo);
+    glBufferData(GL_ARRAY_BUFFER, cnt_vertices * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+}
+
 int main()
 {
     // Initialize OpenGL
@@ -384,9 +348,13 @@ int main()
 
     if (isOk)
     {
+        deque<vector<float>> deq;
+
         // Main loop until window closed or escape pressed.
         while (glfwGetKey(g_window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(g_window) == 0)
         {
+            // Update spectr
+            update(deq);
             // Draw scene.
             draw();
 
