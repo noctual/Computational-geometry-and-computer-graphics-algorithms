@@ -18,6 +18,8 @@ GLuint g_shaderProgram;
 GLint g_uMV;
 GLint g_uMVP;
 // Textures
+GLint mapLocation;
+GLuint texID;
 // Last cursor position.
 GLfloat lastX = 0;
 GLfloat lastY = 0;
@@ -110,23 +112,27 @@ bool createShaderProgram()
         "uniform mat4 u_mvp;"
         "uniform mat4 u_mv;"
         ""
+        "out float height;"
         ""
         "void main()"
         "{"
         "   vec4 pos = vec4(a_position, 1.0);"
         "   gl_Position = u_mvp * pos;"
+        "   height = a_position[1];"
         "}"
         ;
 
     const GLchar fsh[] =
         "#version 330\n"
         ""
+        "uniform sampler1D Texture;"
+        "in float height;"
         ""
         "layout(location = 0) out vec4 o_color;"
         ""
         "void main()"
         "{"
-        "   o_color = vec4(0.0, 1.0, 0.0, 0.0);"
+        "   o_color = vec4(texture(Texture, height).rgb, 1.0);"
         "}"
         ;
 
@@ -143,6 +149,22 @@ bool createShaderProgram()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    GLsizei texW, texH, nrChannels;
+    GLvoid* image;
+    
+    if (!(image = stbi_load("texture.png", &texW, &texH, &nrChannels, 0))) {
+        return false;
+    }
+
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_1D, texID);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, texW, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    stbi_image_free(image);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    mapLocation = glGetUniformLocation(g_shaderProgram, "Texture");
 
     return g_shaderProgram != 0;
 }
@@ -245,6 +267,9 @@ void draw()
     glUniformMatrix4fv(g_uMV, 1, GL_FALSE, glm::value_ptr(View * Model));
     glUniformMatrix4fv(g_uMVP, 1, GL_FALSE, glm::value_ptr(Projection * View * Model));
 
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_1D, texID);
+    glUniform1i(mapLocation, 0);
 
     glDrawElements(GL_TRIANGLES, g_model.indexCount, GL_UNSIGNED_INT, NULL);
 }
@@ -259,6 +284,8 @@ void cleanup()
         glDeleteBuffers(1, &g_model.ibo);
     if (g_model.vao != 0)
         glDeleteVertexArrays(1, &g_model.vao);
+    if (texID != 0)
+        glDeleteTextures(1, &texID);
     delete[] vertices;
 }
 
@@ -321,7 +348,7 @@ void update(deque<vector<float>>& deq) {
     
     vector<float> random;
     for (int i = 0; i < N; i++)
-        random.push_back(rand()%10);
+        random.push_back(rand()%12 / 10.0);
     deq.push_back(random);
     while (deq.size() > N) {
         deq.pop_front();
