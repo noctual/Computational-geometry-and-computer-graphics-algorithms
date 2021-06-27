@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props" Condition="Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props')" />
   <Import Project="..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props" Condition="Exists('..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -140,23 +141,41 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="libs\Gist\AccelerateFFT.cpp" />
+    <ClCompile Include="libs\Gist\CoreFrequencyDomainFeatures.cpp" />
+    <ClCompile Include="libs\Gist\CoreTimeDomainFeatures.cpp" />
+    <ClCompile Include="libs\Gist\Gist.cpp" />
+    <ClCompile Include="libs\Gist\MFCC.cpp" />
+    <ClCompile Include="libs\Gist\OnsetDetectionFunction.cpp" />
+    <ClCompile Include="libs\Gist\WindowFunctions.cpp" />
+    <ClCompile Include="libs\Gist\Yin.cpp" />
+    <ClCompile Include="libs\STBi\stb_image.cpp" />
+    <ClCompile Include="Microphone.cpp" />
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="libs\Gist\AccelerateFFT.h" />
+    <ClInclude Include="libs\Gist\CoreFrequencyDomainFeatures.h" />
+    <ClInclude Include="libs\Gist\CoreTimeDomainFeatures.h" />
+    <ClInclude Include="libs\Gist\Gist.h" />
+    <ClInclude Include="libs\Gist\MFCC.h" />
+    <ClInclude Include="libs\Gist\OnsetDetectionFunction.h" />
+    <ClInclude Include="libs\Gist\WindowFunctions.h" />
+    <ClInclude Include="libs\Gist\Yin.h" />
+    <ClInclude Include="libs\STBi\stb_image.h" />
+    <ClInclude Include="Microphone.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="grass.jpg" />
-    <Image Include="paper.jpg" />
+    <Image Include="texture.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\glfw.3.3.4\build\native\glfw.targets" Condition="Exists('..\packages\glfw.3.3.4\build\native\glfw.targets')" />
     <Import Project="..\packages\glm.0.9.9.800\build\native\glm.targets" Condition="Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" />
+    <Import Project="..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets" Condition="Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -165,5 +184,7 @@
     <Error Condition="!Exists('..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GLEW-static.2.1.0.3\build\native\GLEW-static.props'))" />
     <Error Condition="!Exists('..\packages\glfw.3.3.4\build\native\glfw.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glfw.3.3.4\build\native\glfw.targets'))" />
     <Error Condition="!Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.9.800\build\native\glm.targets'))" />
+    <Error Condition="!Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.props'))" />
+    <Error Condition="!Exists('..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.dev.vcpkg.1.0.0\build\native\vcpkg.C.dev.vcpkg.targets'))" />
   </Target>
 </Project>
