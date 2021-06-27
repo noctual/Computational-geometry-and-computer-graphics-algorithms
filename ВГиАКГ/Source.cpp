@@ -8,6 +8,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "libs/STBi/stb_image.h"
 
+#include "Microphone.h"
+
 #define N 100
 
 using namespace std;
@@ -344,12 +346,10 @@ void tearDownOpenGL()
     glfwTerminate();
 }
 
-void update(deque<vector<float>>& deq) {
-    
-    vector<float> random;
-    for (int i = 0; i < N; i++)
-        random.push_back(rand()%12 / 10.0);
-    deq.push_back(random);
+void update(Microphone* myMicro, deque<vector<float>>& deq) {    
+    myMicro->ClearBuffer();
+    deq.push_back(myMicro->MagnitudeSpectrum());
+
     while (deq.size() > N) {
         deq.pop_front();
     }
@@ -375,13 +375,14 @@ int main()
 
     if (isOk)
     {
+        Microphone* myMicro = new Microphone();
         deque<vector<float>> deq;
 
         // Main loop until window closed or escape pressed.
         while (glfwGetKey(g_window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(g_window) == 0)
         {
             // Update spectr
-            update(deq);
+            update(myMicro, deq);
             // Draw scene.
             draw();
 
@@ -390,6 +391,8 @@ int main()
             // Poll window events.
             glfwPollEvents();
         }
+
+        myMicro->~Microphone();
     }
 
     // Cleanup graphical resources.
